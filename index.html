@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0B2545">
+<title>Lịch trực CĐHA</title>
+<style>
+  :root{
+    --navy:#0B2545; --navy-2:#123061;
+    --bg:#F4F6F9; --card:#FFFFFF; --line:#E3E8EF;
+    --ink:#12203A; --ink-soft:#5B6B84;
+    --teal:#0F8B8D; --amber:#C7791A; --red:#C4432B;
+    --purple:#6B4FA0; --blue:#2B6CB0; --indigo:#3F4FB5; --gray:#8792A2;
+    --gray-bg:#EEF1F5;
+    --radius:14px;
+    --shadow:0 2px 10px rgba(11,37,69,0.07);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:76px; min-height:100vh;
+  }
+  .topbar{
+    background:linear-gradient(135deg,var(--navy) 0%, var(--navy-2) 100%);
+    color:#fff; padding:16px 16px 22px;
+    border-radius:0 0 22px 22px; box-shadow:var(--shadow);
+  }
+  .topbar-row{ display:flex; justify-content:space-between; align-items:flex-start; }
+  .topbar .eyebrow{ font-size:11px; letter-spacing:.14em; text-transform:uppercase; opacity:.7; font-weight:700; margin-bottom:4px; }
+  .topbar h1{ margin:0 0 2px; font-size:19px; font-weight:800; letter-spacing:-0.01em; }
+  .topbar .today-date{ font-size:13px; opacity:.85; font-variant-numeric: tabular-nums; }
+  .topbar-actions{ display:flex; gap:6px; }
+  .icon-btn{ background:rgba(255,255,255,0.14); border:none; color:#fff; width:36px; height:36px; border-radius:10px; font-size:16px; font-weight:700; }
+  .status-pill{ display:inline-flex; align-items:center; gap:6px; font-size:11px; padding:3px 9px; border-radius:999px; background:rgba(255,255,255,0.12); margin-top:8px; font-weight:600; }
+  .status-pill.online .dot{ background:#5FE28C; }
+  .status-pill.offline .dot{ background:#F5B36E; }
+  .status-pill.error .dot{ background:#F26B57; }
+  .status-pill .dot{ width:7px; height:7px; border-radius:50%; display:inline-block; }
+
+  .wrap{ max-width:640px; margin:0 auto; padding:0 14px; }
+  .section{ padding-top:16px; }
+  .card{ background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); border:1px solid var(--line); padding:16px; margin-bottom:14px; }
+  .card h2{ margin:0 0 10px; font-size:14.5px; font-weight:800; color:var(--navy); display:flex; align-items:center; gap:8px; justify-content:space-between; }
+  .tag{ font-size:10px; font-weight:800; padding:2px 8px; border-radius:999px; text-transform:uppercase; letter-spacing:.03em; }
+  .tag.real{ background:#E1F5E4; color:#1E7A34; }
+  .tag.predicted{ background:#FDF3E3; color:#8A5A00; }
+
+  .selector-row{ display:flex; gap:10px; align-items:center; }
+  .select-wrap{ position:relative; flex:1; }
+  .select-wrap::after{ content:"▾"; position:absolute; right:12px; top:50%; transform:translateY(-50%); color:var(--ink-soft); pointer-events:none; font-size:13px; }
+  select, input[type="text"], input[type="url"]{
+    width:100%; font-size:15.5px; font-weight:700; padding:12px;
+    border-radius:10px; border:1.5px solid var(--line); background:var(--gray-bg); color:var(--ink);
+    appearance:none; -webkit-appearance:none;
+  }
+  input[type="text"], input[type="url"]{ font-weight:500; font-size:14px; }
+
+  .banner{ border-radius:12px; padding:12px 14px; font-size:13.5px; font-weight:600; line-height:1.45; margin-bottom:8px; display:flex; gap:10px; align-items:flex-start; border:1.5px solid transparent; }
+  .banner:last-child{ margin-bottom:0; }
+  .banner .dot{ width:8px; height:8px; border-radius:50%; flex:0 0 8px; margin-top:5px; }
+  .banner.urgent{ background:#FBEAE5; color:#8A2E1B; border-color:#F1C6B9; }
+  .banner.urgent .dot{ background:var(--red); }
+  .banner.notice{ background:#FDF3E3; color:#7A4E0C; border-color:#F2DBAE; }
+  .banner.notice .dot{ background:var(--amber); }
+  .banner.calm{ background:#E9F5F5; color:#0A5657; border-color:#C7E6E6; }
+  .banner.calm .dot{ background:var(--teal); }
+  .banner.rest{ background:#EEF1F5; color:#4A5568; border-color:var(--line); }
+  .banner.rest .dot{ background:var(--gray); }
+  .banner.info{ background:#E7F0FA; color:#1B3A66; border-color:#C7D8ED; }
+  .banner.info .dot{ background:var(--blue); }
+
+  .role-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .role-cell{ background:var(--gray-bg); border-radius:10px; padding:10px 8px; text-align:center; }
+  .role-cell .lbl{ font-size:10.5px; color:var(--ink-soft); font-weight:700; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
+  .role-cell .val{ font-size:13px; font-weight:800; color:var(--ink); line-height:1.25; }
+  .role-cell .sub{ font-size:10.5px; color:var(--ink-soft); margin-top:2px; }
+  .role-cell.predicted{ background:#FDF3E3; }
+
+  .row{ display:flex; align-items:center; justify-content:space-between; background:var(--gray-bg); border-radius:10px; padding:10px 12px; margin-bottom:8px; }
+  .row.is-today{ outline:2px solid var(--teal); background:#E9F5F5; }
+  .row .d{ font-size:13px; font-weight:700; color:var(--ink); width:96px; flex:0 0 auto; }
+  .row .d small{ display:block; font-weight:600; color:var(--ink-soft); font-size:11px; }
+  .row .l{ font-size:12.5px; font-weight:700; color:var(--ink-soft); flex:1; }
+  .row .r{ flex:1; text-align:right; font-size:13px; font-weight:700; }
+  .row .r .extra{ display:block; font-size:11px; font-weight:600; color:var(--ink-soft); }
+
+  .month-nav{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:12px; }
+  .month-nav button{ border:1.5px solid var(--line); background:var(--gray-bg); color:var(--navy); font-weight:800; font-size:16px; width:38px; height:38px; border-radius:10px; }
+  .month-nav .mtitle{ font-weight:800; font-size:15px; color:var(--navy); }
+  .month-scroll{ overflow-x:auto; border-radius:10px; border:1px solid var(--line); }
+  table.month-table{ border-collapse:collapse; width:100%; min-width:680px; font-size:12px; }
+  table.month-table th{ position:sticky; top:0; background:var(--navy); color:#fff; padding:8px 5px; font-size:10px; text-transform:uppercase; letter-spacing:.02em; font-weight:800; }
+  table.month-table td{ padding:6px 5px; border-bottom:1px solid var(--line); text-align:center; white-space:nowrap; }
+  table.month-table tr:nth-child(even) td{ background:#FAFBFC; }
+  table.month-table tr.weekend td{ background:#FFF6EC; }
+  table.month-table tr.today-row td{ background:#E9F5F5; font-weight:800; }
+  table.month-table tr.predicted-row td{ color:#B08300; font-style:italic; }
+  table.month-table td.dcell{ text-align:left; font-weight:700; color:var(--ink); }
+  table.month-table td.dcell small{ display:block; color:var(--ink-soft); font-weight:600; }
+
+  .legend{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .legend span{ font-size:11px; color:var(--ink-soft); display:flex; align-items:center; gap:5px; }
+  .legend i{ width:9px; height:9px; border-radius:3px; display:inline-block; }
+
+  .checklist-group summary{ cursor:pointer; font-weight:800; font-size:14px; color:var(--navy); padding:4px 0; list-style:none; }
+  .checklist-group summary::-webkit-details-marker{ display:none; }
+  .checklist-group summary::before{ content:"▸ "; color:var(--teal); }
+  .checklist-group[open] summary::before{ content:"▾ "; }
+  .chk-item{ display:flex; align-items:flex-start; gap:10px; padding:9px 2px; border-bottom:1px solid var(--line); }
+  .chk-item:last-child{ border-bottom:none; }
+  .chk-item input{ width:19px; height:19px; margin-top:1px; accent-color:var(--teal); flex:0 0 auto; }
+  .chk-item label{ font-size:13.5px; line-height:1.4; color:var(--ink); }
+  .chk-item.checked label{ color:var(--ink-soft); text-decoration:line-through; }
+  .hint{ font-size:12px; color:var(--ink-soft); margin-top:10px; line-height:1.5; }
+
+  .tabbar{ position:fixed; bottom:0; left:0; right:0; background:var(--card); border-top:1px solid var(--line); display:flex; padding:6px 6px calc(6px + env(safe-area-inset-bottom)); box-shadow:0 -2px 10px rgba(11,37,69,0.06); z-index:50; }
+  .tabbar button{ flex:1; background:none; border:none; padding:8px 2px; display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--ink-soft); font-size:11px; font-weight:700; border-radius:10px; }
+  .tabbar button .ic{ font-size:18px; line-height:1; }
+  .tabbar button.active{ color:var(--navy); background:var(--gray-bg); }
+  .view{ display:none; }
+  .view.active{ display:block; }
+
+  .setup-hero{ text-align:center; padding:20px 8px; }
+  .setup-hero h3{ margin:0 0 8px; font-size:16px; color:var(--navy); }
+  .setup-hero p{ margin:0 0 14px; font-size:13px; color:var(--ink-soft); line-height:1.5; }
+  .btn-primary{ background:var(--navy); color:#fff; border:none; border-radius:10px; padding:12px 18px; font-weight:800; font-size:14px; }
+  .btn-secondary{ background:var(--gray-bg); color:var(--navy); border:1.5px solid var(--line); border-radius:10px; padding:10px 14px; font-weight:700; font-size:13px; }
+  .btn-full{ width:100%; margin-top:10px; }
+
+  .toast{ position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:var(--navy); color:#fff; padding:10px 16px; border-radius:999px; font-size:13px; font-weight:600; box-shadow:0 4px 14px rgba(0,0,0,0.2); opacity:0; pointer-events:none; transition:opacity 0.2s; z-index:100; }
+  .toast.show{ opacity:1; }
+
+  .modal-backdrop{ position:fixed; inset:0; background:rgba(11,37,69,0.5); z-index:200; display:none; align-items:center; justify-content:center; padding:16px; }
+  .modal-backdrop.show{ display:flex; }
+  .modal{ background:#fff; border-radius:16px; padding:20px; max-width:520px; width:100%; max-height:85vh; overflow-y:auto; }
+  .modal h3{ margin:0 0 10px; font-size:16px; color:var(--navy); }
+  .modal p{ font-size:13px; color:var(--ink-soft); line-height:1.5; margin:0 0 12px; }
+  .modal-actions{ display:flex; gap:8px; margin-top:12px; }
+  .modal-actions button{ flex:1; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap">
+    <div class="topbar-row">
+      <div>
+        <div class="eyebrow">Khoa Chẩn đoán Hình ảnh</div>
+        <h1 id="appTitle">Lịch trực CĐHA</h1>
+        <div class="today-date" id="todayDateLabel">—</div>
+        <div class="status-pill" id="statusPill"><span class="dot"></span><span id="statusText">Đang tải…</span></div>
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn" id="btnRefresh" title="Làm mới">↻</button>
+        <button class="icon-btn" id="btnSettings" title="Cài đặt">⚙</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ===== VIEW: HOME ===== -->
+  <div class="view" id="view-home">
+    <div class="section">
+      <div class="card">
+        <h2>Bạn là KTV nào?</h2>
+        <div class="selector-row"><div class="select-wrap"><select id="mySelect"></select></div></div>
+      </div>
+
+      <div class="card"><h2>Cần chú ý</h2><div id="bannerArea"></div></div>
+
+      <div class="card">
+        <h2 id="myRoleGridTitle">Lịch của bạn — Hôm qua / Hôm nay / Ngày mai</h2>
+        <div class="role-grid" id="myRoleGrid"></div>
+      </div>
+
+      <div class="card">
+        <h2>Toàn khoa hôm nay <span class="tag" id="todayTag"></span></h2>
+        <div id="allTodayList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== VIEW: PERSONAL ===== -->
+  <div class="view" id="view-personal">
+    <div class="section">
+      <div class="card">
+        <h2>Xem lịch cá nhân</h2>
+        <div class="selector-row"><div class="select-wrap"><select id="personalSelect"></select></div></div>
+      </div>
+      <div class="card"><h2>7 ngày tới</h2><div id="weekList"></div></div>
+    </div>
+  </div>
+
+  <!-- ===== VIEW: MONTH ===== -->
+  <div class="view" id="view-month">
+    <div class="section">
+      <div class="card">
+        <h2>Lịch tháng — toàn khoa</h2>
+        <div class="month-nav">
+          <button id="prevMonth">‹</button>
+          <div class="mtitle" id="monthTitle">—</div>
+          <button id="nextMonth">›</button>
+        </div>
+        <div class="month-scroll"><table class="month-table" id="monthTable"></table></div>
+        <div class="hint">Chữ nghiêng màu vàng = ngày chưa có dữ liệu thật, app dự đoán theo chu kỳ 8 ngày. Chữ thường = dữ liệu thật từ sheet Tuần.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== VIEW: CHECKLIST ===== -->
+  <div class="view" id="view-checklist">
+    <div class="section">
+      <div class="card">
+        <h2>Checklist khi TRỰC (24h)</h2>
+        <details class="checklist-group" open><summary>Đầu ca trực</summary><div id="chk-truc-start"></div></details>
+        <details class="checklist-group"><summary>Trong ca trực</summary><div id="chk-truc-during"></div></details>
+        <details class="checklist-group"><summary>Bàn giao cuối ca</summary><div id="chk-truc-end"></div></details>
+        <div class="hint">Khung mẫu — chỉnh sửa nội dung theo quy trình thực tế của khoa.</div>
+      </div>
+      <div class="card">
+        <h2>Checklist đi sớm (6h – 15h, Phòng 3C)</h2>
+        <details class="checklist-group" open><summary>Trước 6h00</summary><div id="chk-early-start"></div></details>
+        <details class="checklist-group"><summary>Trong ca</summary><div id="chk-early-during"></div></details>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="tabbar" id="tabbar">
+  <button data-view="home" class="active"><span class="ic">⌂</span>Hôm nay</button>
+  <button data-view="personal"><span class="ic">☰</span>Cá nhân</button>
+  <button data-view="month"><span class="ic">▦</span>Lịch tháng</button>
+  <button data-view="checklist"><span class="ic">✓</span>Checklist</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <h3>Cài đặt</h3>
+    <p style="font-size:12px;">Trạng thái: <span id="modalDataInfo">—</span></p>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="modalClose">Đóng</button>
+      <button class="btn-primary" id="modalRefreshBtn">Làm mới ngay</button>
+    </div>
+    <button class="btn-secondary btn-full" id="modalClearCache" style="margin-top:10px;">Xóa cache và tải lại</button>
+    <button class="btn-secondary btn-full" id="modalResetAll" style="margin-top:10px;color:var(--red);border-color:#F1C6B9;">Xóa dữ liệu đã lưu trên máy này</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ⚠️ DÁN URL WEB APP CỦA ANH VÀO GIỮA 2 DẤU NHÁY BÊN DƯỚI, RỒI MỚI UPLOAD LÊN GITHUB
+  // Ví dụ: var API_URL = "https://script.google.com/macros/s/AKfycb.../exec";
+  var API_URL = "https://script.google.com/macros/s/AKfycbxfeYuYQlsog48eEIn53ZjWsKZ6Nm-HEB4I8Byvl8cjamLgZsSHwCVAZbNF1F-ijlF5Mw/exec";
+  var LS_CACHE = "cdha_data_cache_v3";
+  var LS_SELECTED = "cdha_selected_ktv_v3";
+  var LS_CHECKLIST_PREFIX = "cdha_chk_";
+
+  var DEFAULT_ROSTER = ["THUẬN","TÈO","KHOA","ĐÓN","THANH A","THANH B","LỢI","DUY"];
+  var DEFAULT_ANCHOR_DATE = "2026-08-01";
+  var DEFAULT_ANCHOR_IDX = 0;
+  var WD_NAMES = ["CN","Thứ 2","Thứ 3","Thứ 4","Thứ 5","Thứ 6","Thứ 7"];
+  var MONTH_NAMES = ["Tháng 1","Tháng 2","Tháng 3","Tháng 4","Tháng 5","Tháng 6","Tháng 7","Tháng 8","Tháng 9","Tháng 10","Tháng 11","Tháng 12"];
+
+  // Thứ tự ưu tiên khi tra "hôm nay X làm gì" (khớp nhiều field thì lấy field ưu tiên cao hơn)
+  var ROLE_PRIORITY = ["truc","ra_truc","p3a","p3b","p3c","p3d","ct","tap_su","badt","hc","giao_ban","doc_kq","som","ngoai_gio","ho_tro"];
+  var ROLE_LABELS_FALLBACK = {
+    truc:"TRỰC (24h)", ra_truc:"RA TRỰC", p3a:"Phòng 3A", p3b:"Phòng 3B", p3c:"Phòng 3C", p3d:"Phòng 3D",
+    ct:"CT Scan & CTCB", ho_tro:"Hỗ trợ P.3A,3B sáng", hc:"Hành chính (HC)", tap_su:"NV tập sự",
+    nghi_bu:"Nghỉ bù", nghi_phep:"Nghỉ phép", badt:"Bệnh án điện tử chiều", giao_ban:"Giao ban BV",
+    som:"Làm sớm 6h-15h", ngoai_gio:"Ngoài giờ 16h-18h", doc_kq:"Đọc KQ X-quang, CT"
+  };
+  var ROLE_CLASS = {
+    truc:"b-truc", ra_truc:"b-ratruc", p3a:"b-3a", p3b:"b-3b", p3c:"b-3c", p3d:"b-3d",
+    ct:"b-ct", ho_tro:"b-3a", hc:"b-hc", tap_su:"b-gray", nghi_bu:"b-gray", nghi_phep:"b-gray",
+    badt:"b-gray", giao_ban:"b-gray", som:"b-3c", ngoai_gio:"b-3b", doc_kq:"b-gray"
+  };
+
+  var state = {
+    data: null,
+    dataSource: "none",
+    selectedName: localStorage.getItem(LS_SELECTED) || DEFAULT_ROSTER[0],
+    today: dateOnly(new Date()),
+    monthCursor: null
+  };
+  state.monthCursor = new Date(state.today.getFullYear(), state.today.getMonth(), 1);
+
+  // ============ DATE UTILS ============
+  function dateOnly(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function addDays(d,n){ var r = new Date(d); r.setDate(r.getDate()+n); return r; }
+  function toISO(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+  function parseISO(s){ if(!s) return null; var m=String(s).match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? new Date(+m[1], +m[2]-1, +m[3]) : null; }
+  function daysBetween(a,b){ var ua=Date.UTC(a.getFullYear(),a.getMonth(),a.getDate()); var ub=Date.UTC(b.getFullYear(),b.getMonth(),b.getDate()); return Math.round((ub-ua)/86400000); }
+  function fmtShort(d){ return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0"); }
+  function fmtFull(d){ return WD_NAMES[d.getDay()]+", "+fmtShort(d)+"/"+d.getFullYear(); }
+
+  // ============ ROSTER / CYCLE (dùng để DỰ ĐOÁN khi chưa có dữ liệu thật) ============
+  function getRoster(){
+    if(state.data && state.data.roster && state.data.roster.length) return state.data.roster.map(function(r){ return String(r.ten).trim().toUpperCase(); });
+    return DEFAULT_ROSTER;
+  }
+  function getAnchor(){
+    if(state.data && state.data.config){
+      var d = parseISO(state.data.config.anchor_date);
+      var idx = parseInt(state.data.config.anchor_person_index,10);
+      if(d && !isNaN(idx)) return {date:d, idx:idx};
+    }
+    return {date: parseISO(DEFAULT_ANCHOR_DATE), idx: DEFAULT_ANCHOR_IDX};
+  }
+  function idxOnDay(d){
+    var a = getAnchor(); var roster = getRoster();
+    var days = daysBetween(a.date, d);
+    return ((days + a.idx) % roster.length + roster.length) % roster.length;
+  }
+  function personAtOffset(d, delta){
+    var roster = getRoster();
+    var i = ((idxOnDay(d) - delta) % roster.length + roster.length) % roster.length;
+    return roster[i];
+  }
+  function predictDay(d){
+    var wd = d.getDay();
+    var out = {
+      truc: personAtOffset(d,0), ra_truc: personAtOffset(d,1), ho_tro: personAtOffset(d,0),
+      ct: personAtOffset(d,3), p3d: personAtOffset(d,4), p3a: personAtOffset(d,5),
+      p3b: personAtOffset(d,6), p3c: personAtOffset(d,7)
+    };
+    if(wd>=1 && wd<=5){ out.som = out.p3c; out.ngoai_gio = out.p3b; }
+    else if(wd===6){ out.ngoai_gio = out.truc; }
+    out._predicted = true;
+    return out;
+  }
+
+  // ============ LẤY DỮ LIỆU NGÀY (thật > dự đoán) ============
+  function getDayInfo(d){
+    var iso = toISO(d);
+    var real = state.data && state.data.days ? state.data.days[iso] : null;
+    var predicted = predictDay(d);
+    if(real && real.truc){
+      // Có dữ liệu thật: dùng thật, field nào thiếu thì lấy dự đoán bù (trừ các field đặc thù không nên đoán)
+      var merged = {};
+      Object.keys(predicted).forEach(function(k){ if(k!=="_predicted") merged[k]=predicted[k]; });
+      Object.keys(real).forEach(function(k){ if(k.indexOf("_")!==0) merged[k]=real[k]; });
+      merged._real = true;
+      merged._sheet = real._source_sheet || "";
+      return merged;
+    }
+    return predicted;
+  }
+
+  function firstLine(raw){ return String(raw).split("\n")[0].trim().toUpperCase(); }
+
+  // Tra vai trò của 1 người trong 1 ngày (dùng ROLE_PRIORITY, có check nghi_bu/nghi_phep dạng list)
+  function getPersonRole(name, d){
+    var nameUp = String(name).trim().toUpperCase();
+    var day = getDayInfo(d);
+    for(var i=0;i<ROLE_PRIORITY.length;i++){
+      var key = ROLE_PRIORITY[i];
+      if(day[key] && firstLine(day[key]) === nameUp){
+        var raw = String(day[key]);
+        var extraNote = raw.indexOf("\n")>=0 ? raw.split("\n").slice(1).join(" ").trim() : "";
+        return { code:key, label: labelFor(key), detail: extraNote, cls: ROLE_CLASS[key]||"b-gray", predicted: !!day._predicted };
+      }
+    }
+    // check danh sách nghỉ bù / nghỉ phép (nhiều người, phân cách dấu phẩy)
+    ["nghi_bu","nghi_phep"].forEach(function(){});
+    var nb = day.nghi_bu ? String(day.nghi_bu).split(",").map(function(s){return s.trim().toUpperCase();}) : [];
+    if(nb.indexOf(nameUp)>=0) return { code:"nghi_bu", label:"Nghỉ bù", detail:"", cls:"b-gray", predicted: !!day._predicted };
+    var np = day.nghi_phep ? String(day.nghi_phep).split(",").map(function(s){return s.trim().toUpperCase();}) : [];
+    if(np.indexOf(nameUp)>=0) return { code:"nghi_phep", label:"Nghỉ phép", detail:"", cls:"b-gray", predicted: !!day._predicted };
+
+    return { code:"?", label: day._real ? "Không có lịch" : "Chưa có dữ liệu", detail:"", cls:"b-gray", predicted: !!day._predicted };
+  }
+  function labelFor(key){
+    return (state.data && state.data.role_labels && state.data.role_labels[key]) || ROLE_LABELS_FALLBACK[key] || key;
+  }
+
+  // ============ NETWORK ============
+  function loadCache(){ try{ var raw = localStorage.getItem(LS_CACHE); return raw ? JSON.parse(raw) : null; }catch(e){ return null; } }
+  function saveCache(data){ try{ localStorage.setItem(LS_CACHE, JSON.stringify({data:data, savedAt:new Date().toISOString()})); }catch(e){} }
+
+  function fetchData(){
+    if(API_URL.indexOf("PASTE_APPS_SCRIPT_URL_HERE") >= 0){
+      return Promise.reject(new Error("Chưa dán URL Apps Script vào file index.html (xem dòng có chữ PASTE_APPS_SCRIPT_URL_HERE)"));
+    }
+    var url = API_URL + "?format=json&t=" + Date.now();
+    return fetch(url, {method:"GET", redirect:"follow"})
+      .then(function(res){ if(!res.ok) throw new Error("HTTP "+res.status); return res.json(); })
+      .then(function(json){
+        if(json.error) throw new Error(json.error);
+        state.data = json; state.dataSource = "network"; saveCache(json);
+        return json;
+      });
+  }
+
+  function initData(){
+    var cache = loadCache();
+    if(cache && cache.data){ state.data = cache.data; state.dataSource = "cache"; showView("home"); renderAll(); }
+    else { showView("home"); }
+    fetchData().then(function(){ renderAll(); updateStatusPill(); showToast("Đã cập nhật dữ liệu mới"); })
+      .catch(function(err){ console.error(err); renderAll(); updateStatusPill(err.message); });
+  }
+
+  function updateStatusPill(errMsg){
+    var pill = document.getElementById("statusPill"); var text = document.getElementById("statusText");
+    pill.classList.remove("online","offline","error");
+    if(errMsg){ pill.classList.add("error"); text.textContent = "Lỗi kết nối"; }
+    else if(state.dataSource==="network"){
+      pill.classList.add("online");
+      var m = state.data && state.data.meta;
+      text.textContent = "Trực tuyến · " + (m ? m.days_count+" ngày dữ liệu thật" : "mới");
+    } else if(state.dataSource==="cache"){
+      pill.classList.add("offline");
+      var cache = loadCache();
+      text.textContent = "Ngoại tuyến · lưu " + (cache ? new Date(cache.savedAt).toLocaleString("vi-VN") : "?");
+    } else { text.textContent = "Chưa có dữ liệu"; }
+  }
+
+  // ============ RENDER ============
+  function buildSelects(){
+    var roster = getRoster();
+    [document.getElementById("mySelect"), document.getElementById("personalSelect")].forEach(function(sel){
+      sel.innerHTML = "";
+      roster.forEach(function(name){ var o=document.createElement("option"); o.value=name; o.textContent=name; sel.appendChild(o); });
+    });
+    if(roster.indexOf(state.selectedName)<0) state.selectedName = roster[0];
+    document.getElementById("mySelect").value = state.selectedName;
+    document.getElementById("personalSelect").value = state.selectedName;
+  }
+
+  function renderAll(){
+    if(state.data && state.data.config && state.data.config.app_title) document.getElementById("appTitle").textContent = state.data.config.app_title;
+    document.getElementById("todayDateLabel").textContent = fmtFull(state.today);
+    buildSelects();
+    renderHome(); renderPersonal(); renderMonth(); updateStatusPill();
+  }
+
+  function renderHome(){
+    var name = state.selectedName;
+    var yRole = getPersonRole(name, addDays(state.today,-1));
+    var tRole = getPersonRole(name, state.today);
+    var mRole = getPersonRole(name, addDays(state.today,1));
+
+    var banners = [];
+    if(mRole.code==="truc") banners.push({type:"urgent", text:"NGÀY MAI ("+fmtShort(addDays(state.today,1))+") bạn TRỰC — chuẩn bị đồ dùng cá nhân qua đêm."});
+    if(tRole.code==="truc") banners.push({type:"urgent", text:"Hôm nay bạn TRỰC (24h)"+(tRole.detail?" — "+tRole.detail:"")+"."});
+    if(tRole.code==="som") banners.push({type:"notice", text:"Hôm nay bạn ĐI SỚM 6h, Phòng 3C đến 15h00."});
+    if(tRole.code==="ngoai_gio") banners.push({type:"notice", text:"Hôm nay bạn trực NGOÀI GIỜ CHIỀU 16h–18h."});
+    if(tRole.code==="ra_truc") banners.push({type:"rest", text:"Hôm nay bạn RA TRỰC — nghỉ bù sau ca trực."});
+    if(tRole.code==="nghi_phep") banners.push({type:"rest", text:"Hôm nay bạn nghỉ phép."});
+    if(tRole.code==="nghi_bu") banners.push({type:"rest", text:"Hôm nay bạn nghỉ bù."});
+    if(tRole.code==="hc") banners.push({type:"info", text:"Hôm nay bạn làm Hành chính (HC)."});
+    if(tRole.predicted) banners.push({type:"info", text:"Lưu ý: hôm nay CHƯA có dữ liệu thật trong sheet — lịch trên là DỰ ĐOÁN theo chu kỳ, có thể không chính xác nếu có đổi ca."});
+
+    if(banners.length===0) banners.push({type:"calm", text:"Hôm nay bạn làm "+tRole.label+". Không có mốc đặc biệt."});
+
+    document.getElementById("bannerArea").innerHTML = banners.map(function(b){
+      return '<div class="banner '+b.type+'"><span class="dot"></span><span>'+escapeHtml(b.text)+'</span></div>';
+    }).join("");
+
+    document.getElementById("myRoleGrid").innerHTML =
+      cellHTML("Hôm qua", addDays(state.today,-1), yRole) +
+      cellHTML("Hôm nay", state.today, tRole) +
+      cellHTML("Ngày mai", addDays(state.today,1), mRole);
+
+    var day = getDayInfo(state.today);
+    document.getElementById("todayTag").innerHTML = day._real ? '<span class="tag real">Dữ liệu thật</span>' : '<span class="tag predicted">Dự đoán</span>';
+    var showKeys = ["truc","ra_truc","p3a","p3b","p3c","p3d","ct","hc","tap_su","badt","som","ngoai_gio","doc_kq","giao_ban","nghi_bu","nghi_phep"];
+    var rows = showKeys.filter(function(k){ return day[k]; }).map(function(k){
+      return {lbl: labelFor(k), val: day[k], cls: ROLE_CLASS[k]||"b-gray"};
+    });
+    document.getElementById("allTodayList").innerHTML = rows.length ? rows.map(function(r){
+      return '<div class="row"><div class="l"><span class="badge '+r.cls+'">'+escapeHtml(r.lbl)+'</span></div><div class="r">'+escapeHtml(r.val)+'</div></div>';
+    }).join("") : '<div class="hint">Chưa có dữ liệu cho hôm nay.</div>';
+  }
+
+  function cellHTML(labelTop, d, role){
+    var cls = "role-cell" + (role.predicted ? " predicted" : "");
+    return '<div class="'+cls+'">'+
+      '<div class="lbl">'+labelTop+' · '+fmtShort(d)+'</div>'+
+      '<div class="val">'+escapeHtml(role.label)+'</div>'+
+      (role.detail ? '<div class="sub">'+escapeHtml(role.detail)+'</div>' : '')+
+      '</div>';
+  }
+
+  function renderPersonal(){
+    var name = state.selectedName;
+    var html = "";
+    for(var n=0;n<7;n++){
+      var d = addDays(state.today,n);
+      var role = getPersonRole(name,d);
+      var isToday = n===0;
+      html += '<div class="row'+(isToday?' is-today':'')+'">'+
+        '<div class="d">'+fmtShort(d)+'<small>'+WD_NAMES[d.getDay()]+(isToday?" · Hôm nay":"")+'</small></div>'+
+        '<div class="r"><span class="badge '+role.cls+'">'+escapeHtml(role.label)+'</span>'+
+        (role.detail?'<span class="extra">'+escapeHtml(role.detail)+'</span>':'')+
+        (role.predicted?'<span class="extra">(dự đoán)</span>':'')+
+        '</div></div>';
+    }
+    document.getElementById("weekList").innerHTML = html;
+  }
+
+  function renderMonth(){
+    var y = state.monthCursor.getFullYear(), m = state.monthCursor.getMonth();
+    document.getElementById("monthTitle").textContent = MONTH_NAMES[m]+" "+y;
+    var daysInMonth = new Date(y,m+1,0).getDate();
+    var thead = "<tr><th>Ngày</th><th>TRỰC</th><th>RA TRỰC</th><th>HC</th><th>Đi sớm</th><th>Ng.giờ</th></tr>";
+    var rows = "";
+    for(var day=1; day<=daysInMonth; day++){
+      var d = new Date(y,m,day);
+      var info = getDayInfo(d);
+      var wd = d.getDay();
+      var isWeekend = (wd===0||wd===6);
+      var isToday = (dateOnly(d).getTime()===state.today.getTime());
+      rows += '<tr class="'+(isWeekend?"weekend ":"")+(isToday?"today-row ":"")+(info._predicted?"predicted-row":"")+'">'+
+        '<td class="dcell">'+String(day).padStart(2,"0")+'<small>'+WD_NAMES[wd]+'</small></td>'+
+        '<td>'+escapeHtml(info.truc||"—")+'</td>'+
+        '<td>'+escapeHtml(info.ra_truc||"—")+'</td>'+
+        '<td>'+escapeHtml(info.hc||"—")+'</td>'+
+        '<td>'+escapeHtml(info.som||"—")+'</td>'+
+        '<td>'+escapeHtml(info.ngoai_gio||"—")+'</td></tr>';
+    }
+    document.getElementById("monthTable").innerHTML = "<thead>"+thead+"</thead><tbody>"+rows+"</tbody>";
+  }
+
+  // ============ CHECKLIST ============
+  var CHECKLISTS = {
+    "chk-truc-start": ["Kiểm tra tình trạng hoạt động các máy: CT Scanner, CBCT, X-quang thường quy","Kiểm tra PACS/RIS/HIS đăng nhập bình thường, đường truyền ổn định","Nhận bàn giao từ ca hành chính: ca bệnh còn tồn, lưu ý đặc biệt","Kiểm tra vật tư tiêu hao (phim, thuốc cản quang, găng tay...)","Chuẩn bị đồ dùng cá nhân qua đêm"],
+    "chk-truc-during": ["Ghi nhận đầy đủ ca chụp cấp cứu vào sổ trực / phần mềm","Xử lý sự cố kỹ thuật (nếu có) và báo cáo cấp trên kịp thời","Đảm bảo an toàn bức xạ, hướng dẫn bệnh nhân/người nhà đúng quy định","Vệ sinh phòng máy, khử khuẩn bàn chụp sau mỗi ca"],
+    "chk-truc-end": ["Bàn giao tình trạng máy móc cho ca kế tiếp","Bàn giao danh sách ca bệnh trong đêm, lưu ý case bất thường","Kiểm tra lại số lượng phim/vật tư đã sử dụng","Dọn dẹp, sắp xếp khu vực trực gọn gàng"],
+    "chk-early-start": ["Có mặt trước 6h00, mở phòng 3C, khởi động máy","Kiểm tra lịch hẹn/chỉ định bệnh nhân buổi sáng sớm","Kiểm tra PACS/RIS/HIS hoạt động bình thường"],
+    "chk-early-during": ["Ưu tiên xử lý bệnh nhân đã hẹn giờ sớm","Ghi nhận đầy đủ vào phần mềm quản lý","Bàn giao phòng 3C cho ca kế tiếp khi hết giờ"]
+  };
+  Object.keys(CHECKLISTS).forEach(function(id){
+    var container = document.getElementById(id);
+    if(!container) return;
+    container.innerHTML = CHECKLISTS[id].map(function(text,idx){
+      var cid = id+"-"+idx;
+      var stored = localStorage.getItem(LS_CHECKLIST_PREFIX+cid)==="1";
+      return '<div class="chk-item'+(stored?" checked":"")+'"><input type="checkbox" id="'+cid+'"'+(stored?" checked":"")+'><label for="'+cid+'">'+escapeHtml(text)+'</label></div>';
+    }).join("");
+    container.querySelectorAll('input[type="checkbox"]').forEach(function(cb){
+      cb.addEventListener("change", function(){
+        this.closest(".chk-item").classList.toggle("checked", this.checked);
+        localStorage.setItem(LS_CHECKLIST_PREFIX+this.id, this.checked?"1":"0");
+      });
+    });
+  });
+
+  // ============ EVENTS ============
+  document.getElementById("mySelect").addEventListener("change", function(){
+    state.selectedName=this.value; document.getElementById("personalSelect").value=this.value;
+    localStorage.setItem(LS_SELECTED,this.value); renderHome(); renderPersonal();
+  });
+  document.getElementById("personalSelect").addEventListener("change", function(){
+    state.selectedName=this.value; document.getElementById("mySelect").value=this.value;
+    localStorage.setItem(LS_SELECTED,this.value); renderHome(); renderPersonal();
+  });
+  document.getElementById("prevMonth").addEventListener("click", function(){
+    state.monthCursor = new Date(state.monthCursor.getFullYear(), state.monthCursor.getMonth()-1, 1); renderMonth();
+  });
+  document.getElementById("nextMonth").addEventListener("click", function(){
+    state.monthCursor = new Date(state.monthCursor.getFullYear(), state.monthCursor.getMonth()+1, 1); renderMonth();
+  });
+  document.querySelectorAll(".tabbar button").forEach(function(btn){ btn.addEventListener("click", function(){ showView(this.dataset.view); }); });
+  function showView(name){
+    document.querySelectorAll(".view").forEach(function(v){ v.classList.remove("active"); });
+    var t = document.getElementById("view-"+name); if(t) t.classList.add("active");
+    document.querySelectorAll(".tabbar button").forEach(function(b){ b.classList.toggle("active", b.dataset.view===name); });
+  }
+
+  document.getElementById("btnSettings").addEventListener("click", function(){
+    var info = "—"; var cache = loadCache();
+    if(cache) info = "Cache lưu "+new Date(cache.savedAt).toLocaleString("vi-VN");
+    document.getElementById("modalDataInfo").textContent = info;
+    document.getElementById("modalBackdrop").classList.add("show");
+  });
+  document.getElementById("modalClose").addEventListener("click", function(){ document.getElementById("modalBackdrop").classList.remove("show"); });
+  document.getElementById("modalRefreshBtn").addEventListener("click", function(){
+    document.getElementById("modalBackdrop").classList.remove("show");
+    showToast("Đang tải lại…");
+    fetchData().then(function(){ renderAll(); showToast("Đã cập nhật!"); }).catch(function(err){ showToast("Lỗi: "+err.message); });
+  });
+  document.getElementById("modalClearCache").addEventListener("click", function(){
+    localStorage.removeItem(LS_CACHE); showToast("Đã xóa cache");
+    fetchData().then(function(){ renderAll(); showToast("Đã tải lại"); }).catch(function(err){ showToast("Lỗi: "+err.message); });
+  });
+  document.getElementById("modalResetAll").addEventListener("click", function(){
+    if(!confirm("Xóa dữ liệu đã lưu trên máy này? Không hoàn tác.")) return;
+    Object.keys(localStorage).forEach(function(k){ if(k.indexOf("cdha_")===0) localStorage.removeItem(k); });
+    location.reload();
+  });
+  document.getElementById("btnRefresh").addEventListener("click", function(){
+    showToast("Đang làm mới…");
+    fetchData().then(function(){ renderAll(); showToast("Đã cập nhật!"); }).catch(function(err){ showToast("Lỗi: "+err.message); });
+  });
+
+  function showToast(msg){ var t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(function(){t.classList.remove("show");},2200); }
+  function escapeHtml(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+
+  initData();
+})();
+</script>
+
+<style>
+  .b-truc{background:var(--red);color:#fff;} .b-ratruc{background:var(--gray);color:#fff;}
+  .b-3a{background:var(--purple);color:#fff;} .b-3b{background:var(--amber);color:#fff;}
+  .b-3c{background:var(--indigo);color:#fff;} .b-3d{background:var(--teal);color:#fff;}
+  .b-ct{background:var(--blue);color:#fff;} .b-hc{background:#8B5A00;color:#fff;} .b-gray{background:#8792A2;color:#fff;}
+  .badge{ display:inline-block; font-size:11px; font-weight:800; padding:3px 8px; border-radius:999px; letter-spacing:.02em; }
+</style>
+</body>
+</html>
