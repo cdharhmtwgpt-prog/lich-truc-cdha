@@ -310,7 +310,7 @@
 
   // ⚠️ DÁN URL WEB APP CỦA ANH VÀO GIỮA 2 DẤU NHÁY BÊN DƯỚI, RỒI MỚI UPLOAD LÊN GITHUB
   // Ví dụ: var API_URL = "https://script.google.com/macros/s/AKfycb.../exec";
-  var API_URL = "https://script.google.com/macros/s/AKfycbxfeYuYQlsog48eEIn53ZjWsKZ6Nm-HEB4I8Byvl8cjamLgZsSHwCVAZbNF1F-ijlF5Mw/exec";
+  var API_URL = "PASTE_APPS_SCRIPT_URL_HERE";
   var LS_CACHE = "cdha_data_cache_v3";
   var LS_SELECTED = "cdha_selected_ktv_v3";
   var LS_CHECKLIST_PREFIX = "cdha_chk_";
@@ -550,11 +550,13 @@
 
     var btn = this;
     btn.disabled = true;
-    fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ nguoi_gui: person, loai: loai, ngay_ap_dung: date, ghi_chu: note })
-    }).then(function(res){ return res.json(); })
+    var qs = "action=submit_request"
+      + "&nguoi_gui=" + encodeURIComponent(person)
+      + "&loai=" + encodeURIComponent(loai)
+      + "&ngay_ap_dung=" + encodeURIComponent(date)
+      + "&ghi_chu=" + encodeURIComponent(note);
+    fetch(API_URL + "?" + qs, { method: "GET" })
+      .then(function(res){ return res.json(); })
       .then(function(json){
         btn.disabled = false;
         if(json.ok){
