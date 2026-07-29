@@ -58,6 +58,16 @@
     appearance:none; -webkit-appearance:none;
   }
   input[type="text"], input[type="url"]{ font-weight:500; font-size:14px; }
+  .form-row{ margin-bottom:12px; }
+  .form-row label{ display:block; font-size:12px; font-weight:700; color:var(--ink-soft); margin-bottom:5px; }
+  input[type="date"]{ width:100%; font-size:14.5px; padding:11px 12px; border-radius:10px; border:1.5px solid var(--line); background:var(--gray-bg); color:var(--ink); }
+  textarea{ width:100%; font-size:14px; padding:11px 12px; border-radius:10px; border:1.5px solid var(--line); background:var(--gray-bg); color:var(--ink); font-family:inherit; resize:vertical; }
+  .req-item{ background:var(--gray-bg); border-radius:10px; padding:10px 12px; margin-bottom:8px; }
+  .req-item .req-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+  .req-item .req-person{ font-weight:800; font-size:13.5px; color:var(--ink); }
+  .req-item .req-date{ font-size:12px; color:var(--ink-soft); font-weight:600; }
+  .req-item .req-note{ font-size:12.5px; color:var(--ink-soft); margin-top:3px; }
+  .b-cho{ background:var(--amber); } .b-duyet{ background:#1E7A34; } .b-tuchoi{ background:var(--red); }
 
   .banner{ border-radius:12px; padding:12px 14px; font-size:13.5px; font-weight:600; line-height:1.45; margin-bottom:8px; display:flex; gap:10px; align-items:flex-start; border:1.5px solid transparent; }
   .banner:last-child{ margin-bottom:0; }
@@ -213,6 +223,43 @@
     </div>
   </div>
 
+  <!-- ===== VIEW: XIN NGHỈ / ĐỔI LỊCH ===== -->
+  <div class="view" id="view-requests">
+    <div class="section">
+      <div class="card">
+        <h2>Gửi yêu cầu mới</h2>
+        <div class="form-row">
+          <label>Người gửi</label>
+          <div class="select-wrap"><select id="reqPerson"></select></div>
+        </div>
+        <div class="form-row">
+          <label>Loại yêu cầu</label>
+          <div class="select-wrap">
+            <select id="reqType">
+              <option value="Nghỉ phép">Nghỉ phép</option>
+              <option value="Đổi lịch">Đổi lịch</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Ngày áp dụng</label>
+          <input type="date" id="reqDate">
+        </div>
+        <div class="form-row">
+          <label>Ghi chú (lý do / muốn đổi với ai...)</label>
+          <textarea id="reqNote" rows="3" placeholder="VD: xin nghỉ phép việc gia đình / đổi trực với THANH A"></textarea>
+        </div>
+        <button class="btn-primary btn-full" id="btnSubmitReq">Gửi yêu cầu</button>
+        <div class="hint" id="reqHint">Yêu cầu sẽ ở trạng thái "Chờ duyệt" cho đến khi khoa duyệt trong Google Sheets. Mọi người đều thấy danh sách bên dưới để tránh đăng ký trùng ngày.</div>
+      </div>
+
+      <div class="card">
+        <h2>Danh sách yêu cầu (30 ngày gần đây)</h2>
+        <div id="reqList"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ===== VIEW: CHECKLIST ===== -->
   <div class="view" id="view-checklist">
     <div class="section">
@@ -237,8 +284,10 @@
   <button data-view="home" class="active"><span class="ic">⌂</span>Hôm nay</button>
   <button data-view="personal"><span class="ic">☰</span>Cá nhân</button>
   <button data-view="month"><span class="ic">▦</span>Lịch tháng</button>
+  <button data-view="requests"><span class="ic">✉</span>Xin nghỉ</button>
   <button data-view="checklist"><span class="ic">✓</span>Checklist</button>
 </div>
+
 
 <div class="toast" id="toast"></div>
 
@@ -261,7 +310,7 @@
 
   // ⚠️ DÁN URL WEB APP CỦA ANH VÀO GIỮA 2 DẤU NHÁY BÊN DƯỚI, RỒI MỚI UPLOAD LÊN GITHUB
   // Ví dụ: var API_URL = "https://script.google.com/macros/s/AKfycb.../exec";
-  var API_URL = "https://script.google.com/macros/s/AKfycbxfeYuYQlsog48eEIn53ZjWsKZ6Nm-HEB4I8Byvl8cjamLgZsSHwCVAZbNF1F-ijlF5Mw/exec";
+  var API_URL = "PASTE_APPS_SCRIPT_URL_HERE";
   var LS_CACHE = "cdha_data_cache_v3";
   var LS_SELECTED = "cdha_selected_ktv_v3";
   var LS_CHECKLIST_PREFIX = "cdha_chk_";
@@ -384,6 +433,26 @@
     return (state.data && state.data.role_labels && state.data.role_labels[key]) || ROLE_LABELS_FALLBACK[key] || key;
   }
 
+  // Sinh nhật sắp tới trong N ngày (mặc định 3) tính từ ngày d
+  function getBirthdaysToNotifyFor(d){
+    if(!state.data || !state.data.birthdays) return [];
+    var days = 3;
+    if(state.data.config && state.data.config.birthday_notify_days_before){
+      days = parseInt(state.data.config.birthday_notify_days_before,10) || 3;
+    }
+    var out = [];
+    state.data.birthdays.forEach(function(b){
+      var m = String(b.dd_mm).match(/^(\d{1,2})[\/\-](\d{1,2})$/);
+      if(!m) return;
+      var day = parseInt(m[1],10), mon = parseInt(m[2],10);
+      var bday = new Date(d.getFullYear(), mon-1, day);
+      var diff = daysBetween(d, bday);
+      if(diff < 0){ bday = new Date(d.getFullYear()+1, mon-1, day); diff = daysBetween(d, bday); }
+      if(diff >= 0 && diff <= days) out.push({ person: b.person, dd_mm: b.dd_mm, daysAway: diff });
+    });
+    return out;
+  }
+
   // ============ NETWORK ============
   function loadCache(){ try{ var raw = localStorage.getItem(LS_CACHE); return raw ? JSON.parse(raw) : null; }catch(e){ return null; } }
   function saveCache(data){ try{ localStorage.setItem(LS_CACHE, JSON.stringify({data:data, savedAt:new Date().toISOString()})); }catch(e){} }
@@ -428,21 +497,76 @@
   // ============ RENDER ============
   function buildSelects(){
     var roster = getRoster();
-    [document.getElementById("mySelect"), document.getElementById("personalSelect")].forEach(function(sel){
+    [document.getElementById("mySelect"), document.getElementById("personalSelect"), document.getElementById("reqPerson")].forEach(function(sel){
       sel.innerHTML = "";
       roster.forEach(function(name){ var o=document.createElement("option"); o.value=name; o.textContent=name; sel.appendChild(o); });
     });
     if(roster.indexOf(state.selectedName)<0) state.selectedName = roster[0];
     document.getElementById("mySelect").value = state.selectedName;
     document.getElementById("personalSelect").value = state.selectedName;
+    document.getElementById("reqPerson").value = state.selectedName;
   }
 
   function renderAll(){
     if(state.data && state.data.config && state.data.config.app_title) document.getElementById("appTitle").textContent = state.data.config.app_title;
     document.getElementById("todayDateLabel").textContent = fmtFull(state.today);
     buildSelects();
-    renderHome(); renderPersonal(); renderMonth(); updateStatusPill();
+    renderHome(); renderPersonal(); renderMonth(); renderRequests(); updateStatusPill();
   }
+
+  function renderRequests(){
+    var list = document.getElementById("reqList");
+    if(!list) return;
+    var reqs = (state.data && state.data.requests) ? state.data.requests.slice() : [];
+    var cutoff = addDays(state.today, -30);
+    reqs = reqs.filter(function(r){ var d = parseISO(r.ngay_ap_dung); return !d || d >= cutoff; });
+    reqs.sort(function(a,b){ return (a.ngay_ap_dung||"").localeCompare(b.ngay_ap_dung||""); });
+    if(!reqs.length){ list.innerHTML = '<div class="hint">Chưa có yêu cầu nào.</div>'; return; }
+    list.innerHTML = reqs.map(function(r){
+      var st = String(r.trang_thai||"Chờ duyệt");
+      var cls = st.indexOf("Đã")>=0 ? "b-duyet" : (st.indexOf("Từ")>=0 ? "b-tuchoi" : "b-cho");
+      var d = parseISO(r.ngay_ap_dung);
+      return '<div class="req-item">'+
+        '<div class="req-top"><span class="req-person">'+escapeHtml(r.nguoi_gui)+' — '+escapeHtml(r.loai)+'</span>'+
+        '<span class="badge '+cls+'">'+escapeHtml(st)+'</span></div>'+
+        '<div class="req-date">'+(d?fmtShort(d)+' ('+WD_NAMES[d.getDay()]+')':escapeHtml(r.ngay_ap_dung))+'</div>'+
+        (r.ghi_chu?'<div class="req-note">'+escapeHtml(r.ghi_chu)+'</div>':'')+
+        (r.ghi_chu_admin?'<div class="req-note">Khoa ghi chú: '+escapeHtml(r.ghi_chu_admin)+'</div>':'')+
+        '</div>';
+    }).join("");
+  }
+
+  document.getElementById("btnSubmitReq").addEventListener("click", function(){
+    var person = document.getElementById("reqPerson").value;
+    var loai = document.getElementById("reqType").value;
+    var date = document.getElementById("reqDate").value;
+    var note = document.getElementById("reqNote").value.trim();
+    if(!date){ showToast("Chọn ngày áp dụng trước"); return; }
+
+    var already = (state.data && state.data.requests || []).some(function(r){
+      return r.ngay_ap_dung === date && String(r.trang_thai).indexOf("Từ")<0;
+    });
+    if(already && !confirm("Ngày này đã có người đăng ký nghỉ/đổi lịch. Vẫn gửi yêu cầu của bạn?")) return;
+
+    var btn = this;
+    btn.disabled = true;
+    fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ nguoi_gui: person, loai: loai, ngay_ap_dung: date, ghi_chu: note })
+    }).then(function(res){ return res.json(); })
+      .then(function(json){
+        btn.disabled = false;
+        if(json.ok){
+          showToast("Đã gửi yêu cầu, chờ khoa duyệt");
+          document.getElementById("reqNote").value = "";
+          document.getElementById("reqDate").value = "";
+          fetchData().then(function(){ renderAll(); });
+        } else {
+          showToast("Lỗi: "+(json.error||"không rõ"));
+        }
+      }).catch(function(err){ btn.disabled=false; showToast("Lỗi gửi: "+err.message); });
+  });
 
   function renderHome(){
     var name = state.selectedName;
@@ -460,6 +584,18 @@
     if(tRole.code==="nghi_bu") banners.push({type:"rest", text:"Hôm nay bạn nghỉ bù."});
     if(tRole.code==="hc") banners.push({type:"info", text:"Hôm nay bạn làm Hành chính (HC)."});
     if(tRole.predicted) banners.push({type:"info", text:"Lưu ý: hôm nay CHƯA có dữ liệu thật trong sheet — lịch trên là DỰ ĐOÁN theo chu kỳ, có thể không chính xác nếu có đổi ca."});
+
+    getBirthdaysToNotifyFor(state.today).forEach(function(b){
+      var when = b.daysAway===0 ? "HÔM NAY" : (b.daysAway===1 ? "NGÀY MAI" : "Còn "+b.daysAway+" ngày");
+      banners.push({type:"calm", text:"Sinh nhật "+b.person+" ("+b.dd_mm+") — "+when+"."});
+    });
+
+    if(state.data && state.data.requests){
+      var myPending = state.data.requests.filter(function(r){
+        return String(r.nguoi_gui).trim().toUpperCase()===name.toUpperCase() && String(r.trang_thai).indexOf("Chờ")>=0;
+      });
+      if(myPending.length) banners.push({type:"info", text:"Bạn có "+myPending.length+" yêu cầu đang chờ khoa duyệt — xem ở tab \"Xin nghỉ\"."});
+    }
 
     if(banners.length===0) banners.push({type:"calm", text:"Hôm nay bạn làm "+tRole.label+". Không có mốc đặc biệt."});
 
@@ -534,7 +670,7 @@
 
   // ============ CHECKLIST ============
   var CHECKLISTS = {
-    "chk-truc-start": ["Kiểm tra tình trạng hoạt động các máy: CT Scanner, CBCT, X-quang thường quy","Kiểm tra PACS/RIS/HIS đăng nhập bình thường, đường truyền ổn định","Nhận bàn giao từ ca hành chính: ca bệnh còn tồn, lưu ý đặc biệt","Kiểm tra vật tư tiêu hao (phim, thuốc cản quang, găng tay...)","Chuẩn bị đồ dùng cá nhân qua đêm"],
+    "chk-truc-start": ["Kiểm tra tình trạng hoạt động các máy: CT Scanner, CBCT, X-quang thường quy","Kiểm tra PACS/RIS/HIS đăng nhập bình thường, đường truyền ổn định","Nhận bàn giao từ ca hành chính: ca bệnh còn tồn, lưu ý đặc biệt","Kiểm tra vật tư tiêu hao (phim, găng tay...)","Chuẩn bị đồ dùng cá nhân qua đêm"],
     "chk-truc-during": ["Ghi nhận đầy đủ ca chụp cấp cứu vào sổ trực / phần mềm","Xử lý sự cố kỹ thuật (nếu có) và báo cáo cấp trên kịp thời","Đảm bảo an toàn bức xạ, hướng dẫn bệnh nhân/người nhà đúng quy định","Vệ sinh phòng máy, khử khuẩn bàn chụp sau mỗi ca"],
     "chk-truc-end": ["Bàn giao tình trạng máy móc cho ca kế tiếp","Bàn giao danh sách ca bệnh trong đêm, lưu ý case bất thường","Kiểm tra lại số lượng phim/vật tư đã sử dụng","Dọn dẹp, sắp xếp khu vực trực gọn gàng"],
     "chk-early-start": ["Có mặt trước 6h00, mở phòng 3C, khởi động máy","Kiểm tra lịch hẹn/chỉ định bệnh nhân buổi sáng sớm","Kiểm tra PACS/RIS/HIS hoạt động bình thường"],
