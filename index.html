@@ -309,7 +309,7 @@
   "use strict";
 
   // ⚠️ DÁN URL WEB APP CỦA ANH VÀO GIỮA 2 DẤU NHÁY BÊN DƯỚI, RỒI MỚI UPLOAD LÊN GITHUB
-  // Ví dụ: var API_URL = "https://script.google.com/macros/s/AKfycb.../exec";
+  // Ví dụ: var API_URL = "https://script.google.com/macros/s/AKfycbxfeYuYQlsog48eEIn53ZjWsKZ6Nm-HEB4I8Byvl8cjamLgZsSHwCVAZbNF1F-ijlF5Mw/exec";
   var API_URL = "https://script.google.com/macros/s/AKfycbxfeYuYQlsog48eEIn53ZjWsKZ6Nm-HEB4I8Byvl8cjamLgZsSHwCVAZbNF1F-ijlF5Mw/exec";
   var LS_CACHE = "cdha_data_cache_v3";
   var LS_SELECTED = "cdha_selected_ktv_v3";
@@ -458,7 +458,7 @@
   function saveCache(data){ try{ localStorage.setItem(LS_CACHE, JSON.stringify({data:data, savedAt:new Date().toISOString()})); }catch(e){} }
 
   function fetchData(){
-    if(API_URL.indexOf("https://script.google.com/macros/s/AKfycbxfeYuYQlsog48eEIn53ZjWsKZ6Nm-HEB4I8Byvl8cjamLgZsSHwCVAZbNF1F-ijlF5Mw/exec") >= 0){
+    if(API_URL.indexOf("PASTE_APPS_SCRIPT_URL_HERE") >= 0){
       return Promise.reject(new Error("Chưa dán URL Apps Script vào file index.html (xem dòng có chữ PASTE_APPS_SCRIPT_URL_HERE)"));
     }
     var url = API_URL + "?format=json&t=" + Date.now();
