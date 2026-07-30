@@ -59,6 +59,19 @@
   }
   input[type="text"], input[type="url"]{ font-weight:500; font-size:14px; }
   .form-row{ margin-bottom:12px; }
+  .subtab-row{ display:flex; gap:8px; margin-bottom:14px; }
+  .subtab-btn{ flex:1; border:1.5px solid var(--line); background:var(--card); color:var(--ink-soft); font-weight:800; font-size:13px; padding:10px 8px; border-radius:10px; }
+  .subtab-btn.active{ background:var(--navy); color:#fff; border-color:var(--navy); }
+  .subview{ display:none; }
+  .subview.active{ display:block; }
+  .radio-row{ display:flex; gap:14px; }
+  .radio-opt{ display:flex; align-items:center; gap:6px; font-size:13.5px; font-weight:600; color:var(--ink); }
+  .radio-opt input{ width:17px; height:17px; accent-color:var(--teal); }
+  .msg-item{ background:var(--gray-bg); border-radius:10px; padding:9px 12px; margin-bottom:8px; }
+  .msg-item .msg-top{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:2px; }
+  .msg-item .msg-who{ font-weight:800; font-size:13px; color:var(--navy); }
+  .msg-item .msg-time{ font-size:11px; color:var(--ink-soft); }
+  .msg-item .msg-body{ font-size:13px; color:var(--ink); white-space:pre-wrap; }
   .form-row label{ display:block; font-size:12px; font-weight:700; color:var(--ink-soft); margin-bottom:5px; }
   input[type="date"]{ width:100%; font-size:14.5px; padding:11px 12px; border-radius:10px; border:1.5px solid var(--line); background:var(--gray-bg); color:var(--ink); }
   textarea{ width:100%; font-size:14px; padding:11px 12px; border-radius:10px; border:1.5px solid var(--line); background:var(--gray-bg); color:var(--ink); font-family:inherit; resize:vertical; }
@@ -193,6 +206,15 @@
         <h2>Toàn khoa hôm nay <span class="tag" id="todayTag"></span></h2>
         <div id="allTodayList"></div>
       </div>
+
+      <div class="card">
+        <h2>Bảng tin khoa</h2>
+        <div class="form-row">
+          <textarea id="msgInput" rows="2" placeholder="Nhắn gì đó cho cả khoa..."></textarea>
+        </div>
+        <button class="btn-primary btn-full" id="btnSubmitMsg">Đăng thông báo</button>
+        <div id="msgList" style="margin-top:12px;"></div>
+      </div>
     </div>
   </div>
 
@@ -226,36 +248,79 @@
   <!-- ===== VIEW: XIN NGHỈ / ĐỔI LỊCH ===== -->
   <div class="view" id="view-requests">
     <div class="section">
-      <div class="card">
-        <h2>Gửi yêu cầu mới</h2>
-        <div class="form-row">
-          <label>Người gửi</label>
-          <div class="select-wrap"><select id="reqPerson"></select></div>
-        </div>
-        <div class="form-row">
-          <label>Loại yêu cầu</label>
-          <div class="select-wrap">
-            <select id="reqType">
-              <option value="Nghỉ phép">Nghỉ phép</option>
-              <option value="Đổi lịch">Đổi lịch</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <label>Ngày áp dụng</label>
-          <input type="date" id="reqDate">
-        </div>
-        <div class="form-row">
-          <label>Ghi chú (lý do / muốn đổi với ai...)</label>
-          <textarea id="reqNote" rows="3" placeholder="VD: xin nghỉ phép việc gia đình / đổi trực với THANH A"></textarea>
-        </div>
-        <button class="btn-primary btn-full" id="btnSubmitReq">Gửi yêu cầu</button>
-        <div class="hint" id="reqHint">Yêu cầu sẽ ở trạng thái "Chờ duyệt" cho đến khi khoa duyệt trong Google Sheets. Mọi người đều thấy danh sách bên dưới để tránh đăng ký trùng ngày.</div>
+      <div class="subtab-row">
+        <button class="subtab-btn active" data-sub="leave">Xin nghỉ / Đổi lịch</button>
+        <button class="subtab-btn" data-sub="handover">Bàn giao ca</button>
       </div>
 
-      <div class="card">
-        <h2>Danh sách yêu cầu (30 ngày gần đây)</h2>
-        <div id="reqList"></div>
+      <div class="subview active" id="subview-leave">
+        <div class="card">
+          <h2>Gửi yêu cầu mới</h2>
+          <div class="form-row">
+            <label>Người gửi</label>
+            <div class="select-wrap"><select id="reqPerson"></select></div>
+          </div>
+          <div class="form-row">
+            <label>Loại yêu cầu</label>
+            <div class="select-wrap">
+              <select id="reqType">
+                <option value="Nghỉ phép">Nghỉ phép</option>
+                <option value="Đổi lịch">Đổi lịch</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>Ngày áp dụng</label>
+            <input type="date" id="reqDate">
+          </div>
+          <div class="form-row">
+            <label>Ghi chú (lý do / muốn đổi với ai...)</label>
+            <textarea id="reqNote" rows="3" placeholder="VD: xin nghỉ phép việc gia đình / đổi trực với THANH A"></textarea>
+          </div>
+          <button class="btn-primary btn-full" id="btnSubmitReq">Gửi yêu cầu</button>
+          <div class="hint" id="reqHint">Yêu cầu sẽ ở trạng thái "Chờ duyệt" cho đến khi khoa duyệt trong Google Sheets. Mọi người đều thấy danh sách bên dưới để tránh đăng ký trùng ngày.</div>
+        </div>
+
+        <div class="card">
+          <h2>Danh sách yêu cầu (30 ngày gần đây)</h2>
+          <div id="reqList"></div>
+        </div>
+      </div>
+
+      <div class="subview" id="subview-handover">
+        <div class="card">
+          <h2>Báo cáo bàn giao ca</h2>
+          <div class="form-row">
+            <label>Ngày giao trực</label>
+            <input type="date" id="hoDate">
+          </div>
+          <div class="form-row">
+            <label>Người giao</label>
+            <div class="select-wrap"><select id="hoFrom"></select></div>
+          </div>
+          <div class="form-row">
+            <label>Người nhận</label>
+            <div class="select-wrap"><select id="hoTo"></select></div>
+          </div>
+          <div class="form-row">
+            <label>Tình trạng ca trực</label>
+            <div class="radio-row">
+              <label class="radio-opt"><input type="radio" name="hoStatus" value="Bình thường" checked> Bình thường</label>
+              <label class="radio-opt"><input type="radio" name="hoStatus" value="Có bất thường"> Có bất thường</label>
+            </div>
+          </div>
+          <div class="form-row" id="hoNoteRow" style="display:none;">
+            <label>Mô tả bất thường (thiết bị, sự cố, ghi chú cần bàn giao...)</label>
+            <textarea id="hoNote" rows="3" placeholder="Mô tả cụ thể sự cố/bất thường"></textarea>
+          </div>
+          <button class="btn-primary btn-full" id="btnSubmitHandover">Gửi báo cáo bàn giao</button>
+          <div class="hint">Ghi lại người giao, người nhận, thời gian gửi để lưu vết — dùng làm căn cứ khi có khiếu nại/tranh chấp về sau.</div>
+        </div>
+
+        <div class="card">
+          <h2>Lịch sử bàn giao (30 ngày gần đây)</h2>
+          <div id="hoList"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -309,7 +374,7 @@
   "use strict";
 
   // ⚠️ DÁN URL WEB APP CỦA ANH VÀO GIỮA 2 DẤU NHÁY BÊN DƯỚI, RỒI MỚI UPLOAD LÊN GITHUB
-  // Ví dụ: var API_URL = "https://script.google.com/macros/s/AKfycbxfeYuYQlsog48eEIn53ZjWsKZ6Nm-HEB4I8Byvl8cjamLgZsSHwCVAZbNF1F-ijlF5Mw/exec";
+  // Ví dụ: var API_URL = "https://script.google.com/macros/s/AKfycb.../exec";
   var API_URL = "https://script.google.com/macros/s/AKfycbxfeYuYQlsog48eEIn53ZjWsKZ6Nm-HEB4I8Byvl8cjamLgZsSHwCVAZbNF1F-ijlF5Mw/exec";
   var LS_CACHE = "cdha_data_cache_v3";
   var LS_SELECTED = "cdha_selected_ktv_v3";
@@ -497,7 +562,9 @@
   // ============ RENDER ============
   function buildSelects(){
     var roster = getRoster();
-    [document.getElementById("mySelect"), document.getElementById("personalSelect"), document.getElementById("reqPerson")].forEach(function(sel){
+    [document.getElementById("mySelect"), document.getElementById("personalSelect"), document.getElementById("reqPerson"),
+     document.getElementById("hoFrom"), document.getElementById("hoTo")].forEach(function(sel){
+      if(!sel) return;
       sel.innerHTML = "";
       roster.forEach(function(name){ var o=document.createElement("option"); o.value=name; o.textContent=name; sel.appendChild(o); });
     });
@@ -505,13 +572,14 @@
     document.getElementById("mySelect").value = state.selectedName;
     document.getElementById("personalSelect").value = state.selectedName;
     document.getElementById("reqPerson").value = state.selectedName;
+    if(document.getElementById("hoFrom")) document.getElementById("hoFrom").value = state.selectedName;
   }
 
   function renderAll(){
     if(state.data && state.data.config && state.data.config.app_title) document.getElementById("appTitle").textContent = state.data.config.app_title;
     document.getElementById("todayDateLabel").textContent = fmtFull(state.today);
     buildSelects();
-    renderHome(); renderPersonal(); renderMonth(); renderRequests(); updateStatusPill();
+    renderHome(); renderPersonal(); renderMonth(); renderRequests(); renderHandovers(); renderMessages(); updateStatusPill();
   }
 
   function renderRequests(){
@@ -535,6 +603,111 @@
         '</div>';
     }).join("");
   }
+
+  function renderHandovers(){
+    var list = document.getElementById("hoList");
+    if(!list) return;
+    var items = (state.data && state.data.handovers) ? state.data.handovers.slice() : [];
+    var cutoff = addDays(state.today, -30);
+    items = items.filter(function(r){ var d = parseISO(r.ngay_giao_truc); return !d || d >= cutoff; });
+    items.sort(function(a,b){ return String(b.thoi_gian_gui||"").localeCompare(String(a.thoi_gian_gui||"")); });
+    if(!items.length){ list.innerHTML = '<div class="hint">Chưa có báo cáo bàn giao nào.</div>'; return; }
+    list.innerHTML = items.map(function(r){
+      var isOk = String(r.tinh_trang).indexOf("Bình thường")>=0;
+      var cls = isOk ? "b-duyet" : "b-tuchoi";
+      var d = parseISO(r.ngay_giao_truc);
+      return '<div class="req-item">'+
+        '<div class="req-top"><span class="req-person">'+escapeHtml(r.nguoi_giao)+' → '+escapeHtml(r.nguoi_nhan)+'</span>'+
+        '<span class="badge '+cls+'">'+escapeHtml(r.tinh_trang)+'</span></div>'+
+        '<div class="req-date">'+(d?fmtShort(d)+' ('+WD_NAMES[d.getDay()]+')':escapeHtml(r.ngay_giao_truc))+' · gửi lúc '+escapeHtml(r.thoi_gian_gui)+'</div>'+
+        (r.mo_ta?'<div class="req-note">'+escapeHtml(r.mo_ta)+'</div>':'')+
+        '</div>';
+    }).join("");
+  }
+
+  function renderMessages(){
+    var list = document.getElementById("msgList");
+    if(!list) return;
+    var items = (state.data && state.data.messages) ? state.data.messages.slice() : [];
+    items.sort(function(a,b){ return String(b.thoi_gian_gui||"").localeCompare(String(a.thoi_gian_gui||"")); });
+    items = items.slice(0, 15);
+    if(!items.length){ list.innerHTML = '<div class="hint">Chưa có thông báo nào.</div>'; return; }
+    list.innerHTML = items.map(function(m){
+      return '<div class="msg-item">'+
+        '<div class="msg-top"><span class="msg-who">'+escapeHtml(m.nguoi_gui)+'</span><span class="msg-time">'+escapeHtml(String(m.thoi_gian_gui||"").replace("T"," "))+'</span></div>'+
+        '<div class="msg-body">'+escapeHtml(m.noi_dung)+'</div>'+
+        '</div>';
+    }).join("");
+  }
+
+  document.querySelectorAll(".subtab-btn").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      document.querySelectorAll(".subtab-btn").forEach(function(b){ b.classList.remove("active"); });
+      this.classList.add("active");
+      document.querySelectorAll(".subview").forEach(function(v){ v.classList.remove("active"); });
+      document.getElementById("subview-"+this.dataset.sub).classList.add("active");
+    });
+  });
+
+  document.querySelectorAll('input[name="hoStatus"]').forEach(function(radio){
+    radio.addEventListener("change", function(){
+      document.getElementById("hoNoteRow").style.display = (this.value === "Có bất thường") ? "block" : "none";
+    });
+  });
+
+  document.getElementById("btnSubmitHandover").addEventListener("click", function(){
+    var date = document.getElementById("hoDate").value;
+    var from = document.getElementById("hoFrom").value;
+    var to = document.getElementById("hoTo").value;
+    var status = document.querySelector('input[name="hoStatus"]:checked').value;
+    var note = document.getElementById("hoNote").value.trim();
+    if(!date){ showToast("Chọn ngày giao trực trước"); return; }
+    if(from === to){ showToast("Người giao và người nhận không thể trùng nhau"); return; }
+    if(status === "Có bất thường" && !note){ showToast("Mô tả cụ thể bất thường trước khi gửi"); return; }
+
+    var btn = this;
+    btn.disabled = true;
+    var qs = "action=submit_handover"
+      + "&ngay_giao_truc=" + encodeURIComponent(date)
+      + "&nguoi_giao=" + encodeURIComponent(from)
+      + "&nguoi_nhan=" + encodeURIComponent(to)
+      + "&tinh_trang=" + encodeURIComponent(status)
+      + "&mo_ta=" + encodeURIComponent(note);
+    fetch(API_URL + "?" + qs, { method: "GET" })
+      .then(function(res){ return res.json(); })
+      .then(function(json){
+        btn.disabled = false;
+        if(json.ok){
+          showToast("Đã gửi báo cáo bàn giao");
+          document.getElementById("hoNote").value = "";
+          fetchData().then(function(){ renderAll(); });
+        } else {
+          showToast("Lỗi: "+(json.error||"không rõ"));
+        }
+      }).catch(function(err){ btn.disabled=false; showToast("Lỗi gửi: "+err.message); });
+  });
+
+  document.getElementById("btnSubmitMsg").addEventListener("click", function(){
+    var content = document.getElementById("msgInput").value.trim();
+    if(!content){ showToast("Nhập nội dung trước khi đăng"); return; }
+    var btn = this;
+    btn.disabled = true;
+    var qs = "action=submit_message"
+      + "&nguoi_gui=" + encodeURIComponent(state.selectedName)
+      + "&noi_dung=" + encodeURIComponent(content);
+    fetch(API_URL + "?" + qs, { method: "GET" })
+      .then(function(res){ return res.json(); })
+      .then(function(json){
+        btn.disabled = false;
+        if(json.ok){
+          showToast("Đã đăng thông báo");
+          document.getElementById("msgInput").value = "";
+          fetchData().then(function(){ renderAll(); });
+        } else {
+          showToast("Lỗi: "+(json.error||"không rõ"));
+        }
+      }).catch(function(err){ btn.disabled=false; showToast("Lỗi gửi: "+err.message); });
+  });
 
   document.getElementById("btnSubmitReq").addEventListener("click", function(){
     var person = document.getElementById("reqPerson").value;
