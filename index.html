@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="theme-color" content="#0B2545">
-<title>Lịch trực CĐHA</title>
+<title>Khoa CĐHA - BV RHMTW TP HCM</title>
 <style>
   :root{
     --navy:#0B2545; --navy-2:#123061;
@@ -173,7 +173,7 @@
     <div class="topbar-row">
       <div>
         <div class="eyebrow">Khoa Chẩn đoán Hình ảnh</div>
-        <h1 id="appTitle">Lịch trực CĐHA</h1>
+        <h1 id="appTitle">Khoa CĐHA - BV RHMTW</h1>
         <div class="today-date" id="todayDateLabel">—</div>
         <div class="status-pill" id="statusPill"><span class="dot"></span><span id="statusText">Đang tải…</span></div>
       </div>
@@ -349,7 +349,7 @@
   <button data-view="home" class="active"><span class="ic">⌂</span>Hôm nay</button>
   <button data-view="personal"><span class="ic">☰</span>Cá nhân</button>
   <button data-view="month"><span class="ic">▦</span>Lịch tháng</button>
-  <button data-view="requests"><span class="ic">✉</span>Xin nghỉ</button>
+  <button data-view="requests"><span class="ic">✉</span>Giao trực</button>
   <button data-view="checklist"><span class="ic">✓</span>Checklist</button>
 </div>
 
@@ -667,13 +667,13 @@
 
     var btn = this;
     btn.disabled = true;
-    var qs = "action=submit_handover"
+    var qs = "format=json&action=submit_handover"
       + "&ngay_giao_truc=" + encodeURIComponent(date)
       + "&nguoi_giao=" + encodeURIComponent(from)
       + "&nguoi_nhan=" + encodeURIComponent(to)
       + "&tinh_trang=" + encodeURIComponent(status)
       + "&mo_ta=" + encodeURIComponent(note);
-    fetch(API_URL + "?" + qs, { method: "GET" })
+    fetch(API_URL + "?" + qs, { method: "GET", redirect: "follow" })
       .then(function(res){ return res.json(); })
       .then(function(json){
         btn.disabled = false;
@@ -692,10 +692,10 @@
     if(!content){ showToast("Nhập nội dung trước khi đăng"); return; }
     var btn = this;
     btn.disabled = true;
-    var qs = "action=submit_message"
+    var qs = "format=json&action=submit_message"
       + "&nguoi_gui=" + encodeURIComponent(state.selectedName)
       + "&noi_dung=" + encodeURIComponent(content);
-    fetch(API_URL + "?" + qs, { method: "GET" })
+    fetch(API_URL + "?" + qs, { method: "GET", redirect: "follow" })
       .then(function(res){ return res.json(); })
       .then(function(json){
         btn.disabled = false;
@@ -723,12 +723,12 @@
 
     var btn = this;
     btn.disabled = true;
-    var qs = "action=submit_request"
+    var qs = "format=json&action=submit_request"
       + "&nguoi_gui=" + encodeURIComponent(person)
       + "&loai=" + encodeURIComponent(loai)
       + "&ngay_ap_dung=" + encodeURIComponent(date)
       + "&ghi_chu=" + encodeURIComponent(note);
-    fetch(API_URL + "?" + qs, { method: "GET" })
+    fetch(API_URL + "?" + qs, { method: "GET", redirect: "follow" })
       .then(function(res){ return res.json(); })
       .then(function(json){
         btn.disabled = false;
@@ -769,7 +769,7 @@
       var myPending = state.data.requests.filter(function(r){
         return String(r.nguoi_gui).trim().toUpperCase()===name.toUpperCase() && String(r.trang_thai).indexOf("Chờ")>=0;
       });
-      if(myPending.length) banners.push({type:"info", text:"Bạn có "+myPending.length+" yêu cầu đang chờ khoa duyệt — xem ở tab \"Xin nghỉ\"."});
+      if(myPending.length) banners.push({type:"info", text:"Bạn có "+myPending.length+" yêu cầu đang chờ khoa duyệt — xem ở tab \"Giao trực\"."});
     }
 
     if(banners.length===0) banners.push({type:"calm", text:"Hôm nay bạn làm "+tRole.label+". Không có mốc đặc biệt."});
